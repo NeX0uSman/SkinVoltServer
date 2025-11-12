@@ -25,6 +25,15 @@ app.use(express.json());
 app.use(cors({
     origin: allowedOrigins
 }))
+
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+    .then(() => console.log("DB okay"))
+    .catch((err) => console.log(`error connecting to DB: ${err}`))
+mongoose.set('bufferTimeoutMS', 60000); // 60 секунд вместо 10
+
 app.use('/uploads', express.static('uploads'));
 
 const storage = multer.diskStorage({
@@ -39,9 +48,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-mongoose.connect(process.env.MONGO_URL)
-    .then(() => console.log("DB okay"))
-    .catch((err) => console.log(`error connecting to DB: ${err}`))
 
 app.get('/skins/all', async (req, res) => {
     try {
