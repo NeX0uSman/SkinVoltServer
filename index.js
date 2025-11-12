@@ -41,6 +41,9 @@ mongoose.connect(process.env.MONGO_URL, {
     .then(() => console.log("DB okay"))
     .catch((err) => console.log(`error connecting to DB: ${err}`))
 mongoose.set('bufferTimeoutMS', 60000); // 60 секунд вместо 10
+mongoose.set('strictQuery', true);
+mongoose.connection.on('error', console.error.bind(console, 'MongoDB connection error:'));
+mongoose.connection.once('open', () => console.log('MongoDB connection open'));
 
 app.use('/uploads', express.static('uploads'));
 
