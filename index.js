@@ -223,7 +223,7 @@ app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) =
 
         const balanceOk = await balanceCheck(buyerId, salePrice)
         if (!balanceOk.ok) {
-            return res.status(400).json({ success: false, message: balanceCheck.message });
+            return res.status(400).json({ success: false, message: balanceOk.message });
         }
 
         

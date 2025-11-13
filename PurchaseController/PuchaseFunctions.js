@@ -8,7 +8,7 @@ dotenv.config();
 
 export const balanceCheck = async (userId, cost) => {
     try {
-        const user = UserModel.findById(userId);
+        const user = await UserModel.findById(userId);
         if (!user) return { ok: false, message: 'user not found' }
         if (user.balance >= cost) {
             return { ok: true, message: 'balance is enough to purchase the skin.Purchasing...' }
