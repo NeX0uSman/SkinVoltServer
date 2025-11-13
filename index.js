@@ -10,6 +10,7 @@ import bcrypt from 'bcrypt'
 import UserModel from './Schemas/UserSchema.js'
 import * as UserController from './AuthController/AuthFunctions.js'
 import dotenv from 'dotenv';
+import { balanceCheck } from './PurchaseController/PuchaseFunctions.js'
 
 dotenv.config();
 
@@ -23,20 +24,20 @@ const allowedOrigins = [
 
 app.use(express.json());
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true)
-    } else {
-      callback(new Error('Not allowed by CORS'))
-    }
-  },
-  credentials: true,
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
+    credentials: true,
 }));
 
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
 })
     .then(() => console.log("DB okay"))
     .catch((err) => console.log(`error connecting to DB: ${err}`))
@@ -212,21 +213,24 @@ app.post('/skins/list/:id', async (req, res) => {
     }
 })
 
-app.listen(port, () => {
-    console.log(`Server started at https://localhost:${port}`)
-})
-
 //purchase logic and sale history adding
 app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) => {
     try {
         const { skinId, salePrice } = req.body;
+        const buyerId = req.userId;
+        const skinOwnerId = skin.ownerId;
 
+        const balanceOk = await balanceCheck(buyerId, salePrice)
+        if (!balanceCheck.ok) {
+            return res.status(400).json({ success: false, message: balanceCheck.message });
+        }
+        
         const skin = await Skin.findById(skinId);
         if (!skin) {
             return res.status(404).json({ message: 'Skin not found' });
         }
-        const skinOwnerId = skin.ownerId;
-        const buyerId = req.userId;
+
+
         if (skinOwnerId.toString() === buyerId.toString()) {
             return res.status(400).json({ message: 'Dummy. YOU cannot purchase your own skin' });
         }
@@ -294,4 +298,8 @@ app.post('/skins/getByIds', async (req, res) => {
             message: 'error fetching skins by ids'
         });
     }
+})
+
+app.listen(port, () => {
+    console.log(`Server started at http://localhost:${port}`)
 })
