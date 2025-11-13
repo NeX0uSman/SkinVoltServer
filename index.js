@@ -218,14 +218,15 @@ app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) =
     try {
         const { skinId, salePrice } = req.body;
         const buyerId = req.userId;
+        const skin = await Skin.findById(skinId);
         const skinOwnerId = skin.ownerId;
 
         const balanceOk = await balanceCheck(buyerId, salePrice)
-        if (!balanceCheck.ok) {
+        if (!balanceOk.ok) {
             return res.status(400).json({ success: false, message: balanceCheck.message });
         }
+
         
-        const skin = await Skin.findById(skinId);
         if (!skin) {
             return res.status(404).json({ message: 'Skin not found' });
         }
