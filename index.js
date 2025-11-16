@@ -92,7 +92,7 @@ app.get('/skins/category/:categoryName', async (req, res) => {
     const categoryName = req.params.categoryName;
 
     try {
-        const skins = await Skin.find({ category: categoryName });
+        const skins = await Skin.find({ category: categoryName, status: 'selling' });
         if (!skins) {
             return res.status(404).json({ message: 'Skins fopr this category not found' })
         }
@@ -107,7 +107,10 @@ app.get('/skins/category/:categoryName', async (req, res) => {
 
 app.get('/random', async (req, res) => {
     try {
-        const skins = await Skin.aggregate([{ $sample: { size: 8 } }]);
+        const skins = await Skin.aggregate([
+            { $sample: { size: 8 } },
+            { $match: { status: 'selling' } }
+        ]);
         res.status(200).json(skins);
     } catch (err) {
         console.log(err)
@@ -120,6 +123,10 @@ app.get('/random', async (req, res) => {
 app.post('/client/register/send', registerValidation, handleErrors, UserController.register)
 
 app.post('/client/login/send', loginValidation, handleErrors, UserController.login)
+
+app.post('/admin/register/send', registerValidation, handleErrors, UserController.adminRegister)
+
+app.post('/admin/login/send', loginValidation, handleErrors, UserController.adminLogin)
 
 app.post('/skins/upload', UserController.verifyClientToken, upload.single('image'), async (req, res) => {
     try {
@@ -226,7 +233,7 @@ app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) =
             return res.status(400).json({ success: false, message: balanceOk.message });
         }
 
-        
+
         if (!skin) {
             return res.status(404).json({ message: 'Skin not found' });
         }

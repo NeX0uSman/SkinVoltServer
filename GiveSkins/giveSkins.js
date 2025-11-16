@@ -1,12 +1,14 @@
 import mongoose from 'mongoose';
 import UserModel from '../Schemas/UserSchema.js';
 import Skin from '../Schemas/ItemSchema.js';
+import dotenv from 'dotenv';
 
-await mongoose.connect('mongodb+srv://admin:2524232221@csskins.3wfl7s3.mongodb.net/', {
+async function giveRandomSkinsToAllUsers() {
+
+    await mongoose.connect(process.env.MONGO_URI, {
     dbName: 'test',
 });
 
-async function giveRandomSkinsToAllUsers() {
     try {
         const users = await UserModel.find({});
         const skins = await Skin.find({});

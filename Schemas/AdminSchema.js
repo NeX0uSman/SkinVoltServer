@@ -1,9 +1,9 @@
 import mongoose from 'mongoose'
 
-const accountSchema = new mongoose.Schema({
+const adminSchema = new mongoose.Schema({
     role: {
         type: String,
-        default: 'client'
+        default: 'admin'
     },
     email: {
         type: String,
@@ -30,10 +30,15 @@ const accountSchema = new mongoose.Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Skin',
         default: []
+    },
+    inviteCodeRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'InviteCode',
+        default: null,
     }
 }, {
     timestamps: true,
 }
 )
 
-export default mongoose.model('User', accountSchema)
+export default mongoose.model('Admin', adminSchema)
