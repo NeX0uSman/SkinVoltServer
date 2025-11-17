@@ -103,6 +103,7 @@ export const adminRegister = async (req, res) => {
             inviteCodeID: codeDoc._id
         })
         codeDoc.used = true;
+        await codeDoc.save();
         const admin = await doc.save();
 
         const token = jwt.sign(
@@ -175,8 +176,12 @@ export const verifyClientToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ message: 'Failed to authenticate the token' });
         }
-        req.userId = decoded._id;
-        next();
+        if (decoded.role == 'admin' || decoded.role == 'client') {
+            req.userId = decoded._id;
+            req.role = decoded.role;
+            return next()
+        }
+        res.status(403).json({ message: 'access forbidden' })
     })
 }
 
@@ -189,7 +194,11 @@ export const verifyAdminToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ message: 'Failed to authenticate the token' });
         }
-        req.userId = decoded._id;
-        next();
+        if (decoded.role == 'admin') {
+            req.userId = decoded._id;
+            req.role = decoded.role;
+            return next()
+        }
+        res.status(403).json({ message: 'access forbidden' })
     })
 }

@@ -289,11 +289,11 @@ app.get('/client/me', UserController.verifyClientToken, async (req, res) => {
 
 app.get('/admin/verify', UserController.verifyAdminToken, async (req, res) => {
     res.status(200).json({ message: "Token is valid" })
-})//admin token verify for AdminPage
+})//admin token verification for admins
 
 app.get('/client/verify', UserController.verifyClientToken, async (req, res) => {
     res.status(200).json({ message: "Token is valid" })
-})//admin token verify for AdminPage
+})//HYBRID token verification for BOTH
 
 app.post('/skins/getByIds', async (req, res) => {
     try {
