@@ -133,21 +133,28 @@ app.post('/skins/upload', UserController.verifyClientToken, upload.single('image
         const { name, price, rarity, weapon, wear, float, special } = req.body;
 
         function autoDetectCategory(weapon) {
-            if (['AK-47', 'M4A4', 'M4A1-S', 'FAMAS', 'Galil AR', 'AUG', 'SG 553', 'SSG 08', 'AWP', 'SCAR-20', 'G3SG1'].includes(weapon)) return 'Rifles';
-            if (['Glock-18', 'USP-S', 'P2000', 'P250', 'Desert Eagle', 'R8 Revolver', 'Five-SeveN', 'CZ75-Auto', 'Dual Berettas', 'Tec-9'].includes(weapon)) return 'Pistols';
-            if (['MAC-10', 'MP7', 'MP9', 'MP5-SD', 'UMP-45', 'P90', 'PP-Bizon'].includes(weapon)) return 'SMGs';
-            if (['Nova', 'XM1014', 'MAG-7', 'Sawed-Off', 'M249', 'Negev'].includes(weapon)) return 'Heavy';
-            if (weapon.includes('Knife')) return 'Knives';
-            if (weapon.includes('Gloves')) return 'Gloves';
-            if (weapon.includes('Agent')) return 'Agents';
-            if (weapon.includes('Case') || weapon.includes('Container')) return 'Containers';
-            if (weapon.includes('Sticker')) return 'Stickers';
-            if (weapon.includes('Keychain')) return 'Keychains';
-            if (weapon.includes('Patch')) return 'Patches';
-            if (weapon.includes('Music Kit')) return 'Music Kits';
-            if (weapon.includes('Pin')) return 'Collectibles';
+            const w = weapon.toUpperCase(); // normalize to uppercase
 
-            return 'Other';
+            const rifles = ['AK-47', 'M4A4', 'M4A1-S', 'FAMAS', 'GALIL AR', 'AUG', 'SG 553', 'SSG 08', 'AWP', 'SCAR-20', 'G3SG1'];
+            const pistols = ['GLOCK-18', 'USP-S', 'P2000', 'P250', 'DESERT EAGLE', 'R8 REVOLVER', 'FIVE-SEVEN', 'CZ75-AUTO', 'DUAL BERETTAS', 'TEC-9'];
+            const smgs = ['MAC-10', 'MP7', 'MP9', 'MP5-SD', 'UMP-45', 'P90', 'PP-BIZON'];
+            const heavy = ['NOVA', 'XM1014', 'MAG-7', 'SAWED-OFF', 'M249', 'NEGEV'];
+
+            if (rifles.includes(w)) return 'Rifles';
+            if (pistols.includes(w)) return 'Pistols';
+            if (smgs.includes(w)) return 'SMGs';
+            if (heavy.includes(w)) return 'Heavy';
+            if (w.includes('KNIFE')) return 'Knives';
+            if (w.includes('GLOVES')) return 'Gloves';
+            if (w.includes('AGENT')) return 'Agents';
+            if (w.includes('CASE') || w.includes('CONTAINER')) return 'Containers';
+            if (w.includes('STICKER')) return 'Stickers';
+            if (w.includes('KEYCHAIN')) return 'Keychains';
+            if (w.includes('PATCH')) return 'Patches';
+            if (w.includes('MUSIC KIT')) return 'Music Kits';
+            if (w.includes('PIN')) return 'Collectibles';
+
+            return 'Unknown';
         }
 
         const category = autoDetectCategory(weapon);
