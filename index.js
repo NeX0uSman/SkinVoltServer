@@ -8,6 +8,7 @@ import handleErrors from './handleErrors/handleErrors.js'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import UserModel from './Schemas/UserSchema.js'
+import Admin from './Schemas/AdminSchema.js'
 import * as UserController from './AuthController/AuthFunctions.js'
 import dotenv from 'dotenv';
 import { balanceCheck } from './PurchaseController/PuchaseFunctions.js'
@@ -128,7 +129,7 @@ app.post('/admin/register/send', registerValidation, handleErrors, UserControlle
 
 app.post('/admin/login/send', loginValidation, handleErrors, UserController.adminLogin)
 
-app.post('/skins/upload', UserController.verifyClientToken, upload.single('image'), async (req, res) => {
+app.post('/skins/upload', UserController.verifyToken(['admin']), upload.single('image'), async (req, res) => {
     try {
         const { name, price, rarity, weapon, wear, float, special } = req.body;
 
@@ -228,12 +229,13 @@ app.post('/skins/list/:id', async (req, res) => {
 })
 
 //purchase logic and sale history adding
-app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) => {
+app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), async (req, res) => {
     try {
         const { skinId, salePrice } = req.body;
         const buyerId = req.userId;
         const skin = await Skin.findById(skinId);
         const skinOwnerId = skin.ownerId;
+        const Model = req.role === 'admin' ? Admin : UserModel;
 
         const balanceOk = await balanceCheck(buyerId, salePrice)
         if (!balanceOk.ok) {
@@ -254,7 +256,7 @@ app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) =
         skin.status = 'inventory';
         await skin.save();
 
-        await UserModel.updateOne(
+        await Model.updateOne(
             {
                 _id: buyerId
             },
@@ -263,7 +265,7 @@ app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) =
                 $inc: { balance: -salePrice }
             }
         );
-        await UserModel.updateOne(
+        await Model.updateOne(
             {
                 _id: skinOwnerId
             },
@@ -281,24 +283,17 @@ app.post('/skins/purchase', UserController.verifyClientToken, async (req, res) =
         })
     }
 })
-app.get('/client/me', UserController.verifyClientToken, async (req, res) => {
-    try {
-        const user = await UserModel.findById(req.userId).select('-passwordHash');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.status(200).json(user);
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({ message: 'error fetching user data' })
-    }
+app.get('/me', UserController.verifyToken(['admin', 'client']), async (req, res) => {
+    const Model = req.role === 'admin' ? Admin : UserModel;
+    const user = await Model.findById(req.userId).select('-passwordHash');
+    res.json(user);
 });
 
-app.get('/admin/verify', UserController.verifyAdminToken, async (req, res) => {
+app.get('/admin/verify', UserController.verifyToken(['admin']), async (req, res) => {
     res.status(200).json({ message: "Token is valid" })
 })//admin token verification for admins
 
-app.get('/client/verify', UserController.verifyClientToken, async (req, res) => {
+app.get('/client/verify', UserController.verifyToken(['client']), async (req, res) => {
     res.status(200).json({ message: "Token is valid" })
 })//HYBRID token verification for BOTH
 

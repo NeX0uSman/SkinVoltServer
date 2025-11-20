@@ -167,38 +167,31 @@ export const adminLogin = async (req, res) => {
     }
 }
 
-export const verifyClientToken = (req, res, next) => {
-    const token = req.headers.authorization.split(' ')[1];
-    if (!token) {
-        return res.status(403).json({ message: 'No client token provided, authorization required' });
-    }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ message: 'Failed to authenticate the token' });
+export const verifyToken = (allowedRoles = []) => {
+    return (req, res, next) => {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(403).json({ message: 'No token provided, authorization required' });
         }
-        if (decoded.role == 'admin' || decoded.role == 'client') {
-            req.userId = decoded._id;
-            req.role = decoded.role;
-            return next()
-        }
-        res.status(403).json({ message: 'access forbidden' })
-    })
-}
 
-export const verifyAdminToken = (req, res, next) => {
-    const token = req.headers.authorization.split(' ')[1];
-    if (!token) {
-        return res.status(403).json({ message: 'No admin token provided, authorization required' });
-    }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ message: 'Failed to authenticate the token' });
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(403).json({ message: 'No token provided' });
         }
-        if (decoded.role == 'admin') {
-            req.userId = decoded._id;
+
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+            if (err) {
+                return res.status(403).json({ message: 'Failed to authenticate the token' });
+            }
+
+
+            if (allowedRoles.length && !allowedRoles.includes(decoded.role)) {
+                return res.status(403).json({ message: 'Access forbidden' });
+            }
+
+            req.userId = decoded._id; 
             req.role = decoded.role;
-            return next()
-        }
-        res.status(403).json({ message: 'access forbidden' })
-    })
-}
+            next();
+        });
+    };
+};
