@@ -42,7 +42,7 @@ mongoose.connect(process.env.MONGO_URI, {
 })
     .then(() => console.log("DB okay"))
     .catch((err) => console.log(`error connecting to DB: ${err}`))
-mongoose.set('bufferTimeoutMS', 60000); // 60 секунд вместо 10
+mongoose.set('bufferTimeoutMS', 60000);
 mongoose.set('strictQuery', true);
 mongoose.connection.on('error', console.error.bind(console, 'MongoDB connection error:'));
 mongoose.connection.once('open', () => console.log('MongoDB connection open'));
@@ -170,7 +170,7 @@ app.post('/skins/upload', UserController.verifyToken(['admin']), upload.single('
             wear,
             special,
             category,
-            ownerId: req.userId,
+            ownerId: null,
             status: 'selling',
         })
 
@@ -241,21 +241,19 @@ app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), asy
         if (!skin) {
             return res.status(404).json({ message: 'Skin not found' });
         }
-        const sellerId = skin.ownerId;
-        if (sellerId.toString() === buyerId.toString()) {
+        let sellerId = skin.ownerId || null;
+
+        if (sellerId && sellerId.toString() === buyerId.toString()) {
             return res.status(400).json({ message: 'You cannot purchase your own skin' });
         }
 
-
-        const sellerIsAdmin = await Admin.exists({ _id: sellerId })
-        const SellerModel = sellerIsAdmin ? Admin : UserModel;
         const BuyerModel = buyerRole == 'admin' ? Admin : UserModel;
 
-        const balanceOk = await balanceCheck(buyerId, salePrice)
+        const balanceOk = await balanceCheck(buyerId, salePrice, buyerRole)
         if (!balanceOk.ok) {
             return res.status(400).json({ success: false, message: balanceOk.message });
         }
-        
+
         skin.saleHistory.push({ date: new Date(), price: salePrice });
         skin.ownerId = buyerId;
         skin.status = 'inventory';
@@ -270,15 +268,20 @@ app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), asy
                 $inc: { balance: -salePrice }
             }
         );
-        await SellerModel.updateOne(
-            {
-                _id: sellerId
-            },
-            {
-                $pull: { inventory: skin._id },
-                $inc: { balance: +salePrice }
-            }
-        );
+
+        if (sellerId) {
+            const sellerIsAdmin = await Admin.exists({ _id: sellerId })
+            const SellerModel = sellerIsAdmin ? Admin : UserModel;
+            await SellerModel.updateOne(
+                {
+                    _id: sellerId
+                },
+                {
+                    $pull: { inventory: skin._id },
+                    $inc: { balance: +salePrice }
+                }
+            );
+        } //only if it has an owner, because otherwise its a new skin which doesnt have an owner yet
 
         res.status(200).json({ success: true, message: 'Purchase successful' });
     } catch (err) {
