@@ -232,31 +232,36 @@ app.post('/skins/list/:id', async (req, res) => {
 app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), async (req, res) => {
     try {
         const { skinId, salePrice } = req.body;
+
         const buyerId = req.userId;
+        const buyerRole = req.role;
+
+
         const skin = await Skin.findById(skinId);
-        const skinOwnerId = skin.ownerId;
-        const Model = req.role === 'admin' ? Admin : UserModel;
+        if (!skin) {
+            return res.status(404).json({ message: 'Skin not found' });
+        }
+        const sellerId = skin.ownerId;
+        if (sellerId.toString() === buyerId.toString()) {
+            return res.status(400).json({ message: 'You cannot purchase your own skin' });
+        }
+
+
+        const sellerIsAdmin = await Admin.exists({ _id: sellerId })
+        const SellerModel = sellerIsAdmin ? Admin : UserModel;
+        const BuyerModel = buyerRole == 'admin' ? Admin : UserModel;
 
         const balanceOk = await balanceCheck(buyerId, salePrice)
         if (!balanceOk.ok) {
             return res.status(400).json({ success: false, message: balanceOk.message });
         }
-
-
-        if (!skin) {
-            return res.status(404).json({ message: 'Skin not found' });
-        }
-
-
-        if (skinOwnerId.toString() === buyerId.toString()) {
-            return res.status(400).json({ message: 'Dummy. YOU cannot purchase your own skin' });
-        }
+        
         skin.saleHistory.push({ date: new Date(), price: salePrice });
         skin.ownerId = buyerId;
         skin.status = 'inventory';
         await skin.save();
 
-        await Model.updateOne(
+        await BuyerModel.updateOne(
             {
                 _id: buyerId
             },
@@ -265,9 +270,9 @@ app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), asy
                 $inc: { balance: -salePrice }
             }
         );
-        await Model.updateOne(
+        await SellerModel.updateOne(
             {
-                _id: skinOwnerId
+                _id: sellerId
             },
             {
                 $pull: { inventory: skin._id },
@@ -283,6 +288,7 @@ app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), asy
         })
     }
 })
+
 app.get('/me', UserController.verifyToken(['admin', 'client']), async (req, res) => {
     const Model = req.role === 'admin' ? Admin : UserModel;
     const user = await Model.findById(req.userId).select('-passwordHash');
