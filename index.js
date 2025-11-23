@@ -293,9 +293,9 @@ app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), asy
 })
 
 app.get('/me', UserController.verifyToken(['admin', 'client']), async (req, res) => {
-    const Model = req.role === 'admin' ? Admin : UserModel;
-    const user = await Model.findById(req.userId).select('-passwordHash');
-    res.json(user);
+        const Model = req.role === 'admin' ? Admin : UserModel;
+        const user = await Model.findById(req.userId).select('-passwordHash');
+        res.status(200).json(user);
 });
 
 app.get('/admin/verify', UserController.verifyToken(['admin']), async (req, res) => {
