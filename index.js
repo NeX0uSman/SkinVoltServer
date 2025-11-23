@@ -188,7 +188,7 @@ app.post('/skins/upload', UserController.verifyToken(['admin']), upload.single('
     }
 })
 
-app.delete('/skins/unlist/:id', async (req, res) => {
+app.post('/skins/unlist/:id', async (req, res) => {
     try {
         const id = req.params.id;
 
@@ -201,6 +201,23 @@ app.delete('/skins/unlist/:id', async (req, res) => {
 
         res.status(200).json({
             message: 'skin unlisted successfully',
+        })
+    } catch (err) {
+        console.log()
+    }
+})
+
+app.post('/skins/delete/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const result = await Skin.deleteOne({ _id: id });
+        if (!result) {
+            console.log('Skin with id' + id + ' has not been found for deleting');
+        }
+
+        res.status(200).json({
+            message: 'skin deleted successfully',
         })
     } catch (err) {
         console.log()
@@ -293,9 +310,9 @@ app.post('/skins/purchase', UserController.verifyToken(['admin', 'client']), asy
 })
 
 app.get('/me', UserController.verifyToken(['admin', 'client']), async (req, res) => {
-        const Model = req.role === 'admin' ? Admin : UserModel;
-        const user = await Model.findById(req.userId).select('-passwordHash');
-        res.status(200).json(user);
+    const Model = req.role === 'admin' ? Admin : UserModel;
+    const user = await Model.findById(req.userId).select('-passwordHash');
+    res.status(200).json(user);
 });
 
 app.get('/admin/verify', UserController.verifyToken(['admin']), async (req, res) => {
